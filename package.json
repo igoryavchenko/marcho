@@ -9,6 +9,7 @@
   "author": "Igor Yavchenko",
   "license": "ISC",
   "devDependencies": {
+    "@fancyapps/fancybox": "^3.5.7",
     "browser-sync": "^2.28.1",
     "gulp": "^4.0.2",
     "gulp-autoprefixer": "^6.1.0",
