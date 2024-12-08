@@ -1,19 +1,21 @@
 const {src, dest, watch, parallel, series} = require('gulp');
 
-const scss   = require('gulp-sass')(require('sass'));
-const concat = require('gulp-concat');
-const uglify = require('gulp-uglify-es').default;
-const browserSync = require('browser-sync').create();
-const autoprefixer = require('gulp-autoprefixer');
-const clean = require('gulp-clean');
-const avif = require('gulp-avif');
-const webp = require('gulp-webp');
-const imagemin = require('gulp-imagemin');
-const newer = require('gulp-newer');
-const fonter = require('gulp-fonter');
-const ttf2woff2 = require('gulp-ttf2woff2');
-const svgSprite = require('gulp-svg-sprite');
-const include  = require('gulp-include');
+const scss           = require('gulp-sass')(require('sass'));
+const concat         = require('gulp-concat');
+const uglify         = require('gulp-uglify-es').default;
+const browserSync    = require('browser-sync').create();
+const autoprefixer   = require('gulp-autoprefixer');
+const clean          = require('gulp-clean');
+const avif           = require('gulp-avif');
+const webp           = require('gulp-webp');
+const imagemin       = require('gulp-imagemin');
+const rename         = require('gulp-rename');
+const nunjucksRender = require('gulp-nunjucks-render');
+const newer          = require('gulp-newer');
+const fonter         = require('gulp-fonter');
+const ttf2woff2      = require('gulp-ttf2woff2');
+const svgSprite      = require('gulp-svg-sprite');
+const include        = require('gulp-include');
 
 function pages(){
   return src('app/pages/*.html')
@@ -21,6 +23,13 @@ function pages(){
       includePaths: 'app/components'
     }))
     .pipe(dest('app/'))
+    .pipe(browserSync.stream());
+}
+
+function nunjucks(){
+  return src('app/*.njk')
+    .pipe(nunjucksRender())
+    .pipe(dest('app'))
     .pipe(browserSync.stream());
 }
 
@@ -64,7 +73,15 @@ function sprite(){
 }
 
 function scripts(){
-  return src('app/js/main.js')
+  return src([
+    'node_modules/jquery/dist/jquery.js',
+    'node_modules/slick-carousel/slick/slick.js',
+    'node_modules/@fancyapps/fancybox/dist/jquery.fancybox.js',
+    'node_modules/rateyo/src/jquery.rateyo.js',
+    'node_modules/ion-rangeslider/js/ion.rangeSlider.js',
+    'node_modules/jquery-form-styler/dist/jquery.formstyler.js',
+    'app/js/main.js'
+  ])
     .pipe(concat('main.min.js'))
     .pipe(uglify())
     .pipe(dest('app/js'))
@@ -73,11 +90,14 @@ function scripts(){
 
 function styles(){
   return src([
-    'app/scss/style.scss'
+    'app/scss/*.scss'
   ])
-    .pipe(autoprefixer({overrideBrowserslist: ['last 10 version']}))
-    .pipe(concat('style.min.css'))
     .pipe(scss({ outputStyle: 'compressed' }))
+    // .pipe(concat())     
+    .pipe(rename({
+      suffix : '.min'
+    }))
+    .pipe(autoprefixer({overrideBrowserslist: ['last 10 version']}))
     .pipe(dest('app/css'))
     .pipe(browserSync.stream());
 }
@@ -88,7 +108,8 @@ function watching(){
         baseDir: "app/"
     }
   });
-  watch(['app/scss/style.scss'], styles)
+  watch(['app/**/*.scss'], styles)
+  watch(['app/*.njk'], nunjucks)
   watch(['app/images/src.scss'], images)
   watch(['app/js/main.js'], scripts)
   watch(['app/components/*', 'app/pages/*'], pages)
@@ -116,6 +137,7 @@ function building(){
 
 exports.styles = styles;
 exports.images = images;
+exports.nunjucks = nunjucks;
 exports.fonts = fonts;
 exports.pages = pages;
 exports.building = building;
@@ -124,4 +146,4 @@ exports.scripts = scripts;
 exports.watching = watching;
 
 exports.build = series(cleanDist, building);
-exports.default = parallel(styles, images, scripts, pages, watching); 
+exports.default = parallel(nunjucks, styles, images, scripts, pages, watching); 
